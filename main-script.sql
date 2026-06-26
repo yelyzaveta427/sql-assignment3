@@ -19,3 +19,59 @@ as $$
     from customers 
     where customer_id = p_customer_id;
 $$;
+
+create or replace procedure add_product_to_order(p_order_id int, p_product_id int, p_quantity int)
+language plpgsql as $$
+
+begin
+	
+	insert into order_items (order_id, product_id, quantity, price)
+	select p_order_id, p_product_id, p_quantity, price
+	from products where product_id = p_product_id and p_quantity > 0 
+	and stock_quantity >= p_quantity; 
+	
+	update products
+	set stock_quantity = stock_quantity - p_quantity
+	where product_id = p_product_id and p_quantity > 0 and stock_quantity >= p_quantity;
+end;
+$$;
+
+create or replace function update_order_total()
+returns trigger
+language plpgsql as $$
+
+begin
+	select calculate_order(
+		case 
+			when TG_OP = 'DELETE' then old.order_id
+			else new.order_id
+		end
+	);
+end;
+$$;
+
+create trigger trigger_items_change after insert or update or delete on order_items
+for each row execute function update_order_total();
+
+create or replace function log_new_order()
+returns trigger 
+language plpgsql as $$
+begin
+	insert into order_log (order_id, customer_id, action_type, change_time)
+	values(
+		new.order_id,
+		new.customer_id,
+		'create',
+		now()
+	
+	);
+end;
+$$;
+
+create trigger trigger_after_created_order after insert on orders
+for each row execute function log_new_order();
+
+
+call create_order(1);
+select * from orders where customer_id = 10;
+
