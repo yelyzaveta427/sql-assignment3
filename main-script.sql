@@ -36,17 +36,18 @@ begin
 end;
 $$;
 
+
 create or replace function update_order_total()
 returns trigger
 language plpgsql as $$
-
+declare v_order_id int;
 begin
-	select calculate_order(
-		case 
-			when TG_OP = 'DELETE' then old.order_id
-			else new.order_id
-		end
-	);
+	select case 
+      when TG_OP = 'DELETE' then old.order_id
+      else new.order_id
+    end into v_order_id;
+
+  	perform calculate_order(v_order_id);
 end;
 $$;
 
@@ -57,21 +58,15 @@ create or replace function log_new_order()
 returns trigger 
 language plpgsql as $$
 begin
-	insert into order_log (order_id, customer_id, action_type, change_time)
-	values(
-		new.order_id,
-		new.customer_id,
-		'create',
-		now()
-	
-	);
+  insert into order_log (order_id, customer_id, action_type, change_time)
+  values(
+    new.order_id,
+    new.customer_id,
+    'create',
+    new.order_date
+  );
 end;
 $$;
 
 create trigger trigger_after_created_order after insert on orders
 for each row execute function log_new_order();
-
-
-call create_order(1);
-select * from orders where customer_id = 10;
-
