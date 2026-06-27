@@ -86,22 +86,23 @@ select product_id, product_name, price, stock_quantity from products;
 
 --можна створити замовлення (створюється для Лани Дел Рей з її ід 5)
 call create_order(5);
+--перевірка створення логів нового замовлення
+select log_id, order_id, customer_id, action, log_date from order_log;
+--в таблиці замовлень має з'явитись нове замовлення
 select order_id, customer_id, order_date, total_amount from orders;
 
 --додається товар до замовлення Лани (ід її замовлення - 4)
 call add_product_to_order(4,1,1);
-select order_id, product_id, quantity, price from order_items;
 
 --загальна ціна замовлення автоматично оновлюється
 select order_id, customer_id, total_amount from orders where order_id = 4;
 
 --перевірка зменшення товару
 select product_id, product_name, stock_quantity from products where product_id = 1;
-call add_product_to_order(4, 1, 3);
+call add_product_to_order(1, 1, 3);
 select product_id, product_name, stock_quantity from products where product_id = 1;
 
---перевірка створення логів нового замовлення
-select log_id, order_id, customer_id, action, log_date from order_log;
+
 
 --Додавання ще товарів до замовлення Лани
 call add_product_to_order(4, 2, 1);
@@ -117,6 +118,8 @@ select
 	(oi.quantity*oi.price) as "Total price for items"
 from order_items oi
 join products p on oi.product_id = p.product_id where oi.order_id = 4;
+
+
 
 
 
